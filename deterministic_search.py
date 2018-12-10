@@ -16,6 +16,8 @@ class DepthFirstSearch:
             prev_actions, state = frontier.pop()
             visited.append(state)
             self.num_states_explored += 1
+            if self.num_states_explored % 250 == 0:
+                print("explored", self.num_states_explored, "states")
 
             # print("---")
             # print("state: (prev actions were: %s)" % (prev_actions, ))

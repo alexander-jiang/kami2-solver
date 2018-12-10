@@ -1,5 +1,5 @@
-
 import copy
+import random
 
 class Kami2Puzzle:
     def __init__(self, initial_state):
@@ -35,6 +35,7 @@ class Kami2Puzzle:
                 new_state = state.set_color(node, new_color)
                 cost = 1
                 results.append(((node, new_color), new_state, cost))
+        random.shuffle(results)
         return results
 
     def is_terminal_state(self, state):
