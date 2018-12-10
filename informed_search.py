@@ -28,7 +28,7 @@ def color_distance_heuristic(state):
     that is easiest to contract first, as doing so could help contract other
     colors.
     """
-    raise NotImplementedError("This heuristic is *really* slow...")
+    print("WARNING This heuristic is *really* slow...")
     nodes = state.nodes()
     # how many moves to contract one color to a single node?
     moves_to_contract = state.moves_left
