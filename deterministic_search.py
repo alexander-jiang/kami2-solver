@@ -17,14 +17,14 @@ class DepthFirstSearch:
             visited.append(state)
             self.num_states_explored += 1
 
-            # print "---"
-            # print "state: (prev actions were: %s)" % (prev_actions, )
-            # print "    ", state.graph
-            # print "    ", state.node_colors
-            # print "    moves left: %d" % (state.moves_left,)
+            # print("---")
+            # print("state: (prev actions were: %s)" % (prev_actions, ))
+            # print("    ", state.graph)
+            # print("    ", state.node_colors)
+            # print("    moves left: %d" % (state.moves_left,))
             if problem.is_terminal_state(state) == 1:
-                print "solution found! ", prev_actions
-                print "num states explored: ", self.num_states_explored
+                print("solution found! ", prev_actions)
+                print("num states explored: ", self.num_states_explored)
                 if find_all_solutions: continue
                 else: break
             if problem.is_terminal_state(state) == -1:
@@ -56,24 +56,24 @@ class UniformCostSearch:
         frontier.update(start_state, 0)
         while not frontier.empty():
             state, g_cost = frontier.remove_min()
-            # print "min cost state from frontier:"
-            # print state.graph
-            # print state.node_colors
-            # print g_cost
+            # print("min cost state from frontier:")
+            # print(state.graph)
+            # print(state.node_colors)
+            # print(g_cost)
             visited.append(state)
             self.num_states_explored += 1
             if self.num_states_explored % 250 == 0:
-                print "explored", self.num_states_explored, "states"
+                print("explored", self.num_states_explored, "states")
 
             if problem.is_terminal_state(state) == 1:
-                print "solution found!"
+                print("solution found!")
                 self.total_cost = g_cost
                 self.actions = []
                 while state != start_state:
                     action, state = predecessor[state]
                     self.actions.insert(0, action)
-                print "actions: ", self.actions
-                print "num states explored: ", self.num_states_explored
+                print("actions: ", self.actions)
+                print("num states explored: ", self.num_states_explored)
                 break
             if problem.is_terminal_state(state) == -1:
                 continue

@@ -114,5 +114,5 @@ puzzle89_moves_left = 10
 puzzle89_step0 = kami2.PuzzleState(puzzle89_graph, puzzle89_node_colors, puzzle89_moves_left)
 puzzle89 = kami2.Kami2Puzzle(puzzle89_step0)
 
-print "Solving using A*:"
+print("Solving using A*:")
 informed_search.AStarSearch(informed_search.num_colors_heuristic).solve(puzzle89)

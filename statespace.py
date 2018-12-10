@@ -1,3 +1,4 @@
+
 import copy
 
 class Kami2Puzzle:
@@ -30,7 +31,7 @@ class Kami2Puzzle:
             for new_color in colors:
                 if new_color == state.get_color(node):
                     continue
-                # print "setting node %d to color %s" % (node, new_color)
+                # print("setting node %d to color %s" % (node, new_color))
                 new_state = state.set_color(node, new_color)
                 cost = 1
                 results.append(((node, new_color), new_state, cost))
@@ -61,6 +62,8 @@ class PuzzleState:
         self.colors - set of strings, the colors in the graph state
         self.node_colors - dict from node to string, the colors of each node
         self.moves_left - int, the number of moves left to solve the puzzle
+        self.pairwise_distances - 2D dict, the pairwise distance between nodes
+        (see get_pairwise_distances function below)
         """
         self._validate_init(graph, node_colors, moves_left)
 
@@ -68,6 +71,7 @@ class PuzzleState:
         self.colors = set(node_colors.values())
         self.node_colors = node_colors
         self.moves_left = moves_left
+        self.pairwise_distances = None
 
     def _validate_init(self, graph, node_colors, moves_left):
         """
@@ -155,3 +159,29 @@ class PuzzleState:
         new_node_colors[node] = new_color
 
         return PuzzleState(new_graph, new_node_colors, self.moves_left - 1)
+
+    def get_pairwise_distances(self):
+        """
+        Gets the pairwise distances between nodes in the graph (memoized).
+        """
+        def floyd_warshall(graph):
+            distances = {}
+            num_nodes = len(graph.keys())
+            for node in graph:
+                distances[node] = {}
+                for node2 in graph:
+                    distances[node][node2] = float('inf')
+            for node in graph:
+                for neighbor in graph[node]:
+                    distances[node][neighbor] = 1
+                distances[node][node] = 0
+            for midnode in graph:
+                for src in graph:
+                    for sink in graph:
+                        if distances[src][sink] > distances[src][midnode] + distances[midnode][sink]:
+                            distances[src][sink] = distances[src][midnode] + distances[midnode][sink]
+            return distances
+
+        if self.pairwise_distances is None:
+            self.pairwise_distances = floyd_warshall(self.graph)
+        return self.pairwise_distances

@@ -1,4 +1,5 @@
 import heapq
+import itertools
 
 # Priority queue supports uniform cost search (to efficiently pick the next
 # element from the frontier).
@@ -7,6 +8,7 @@ class PriorityQueue:
         self.REMOVED = -100000
         self.heap = []
         self.priorities = {}  # Map from state to priority
+        self.counter = itertools.count()     # unique sequence count
 
     # Insert state into heap (with the given priority) if state isn't in the
     # heap or if new priority < existing priority.
@@ -15,7 +17,8 @@ class PriorityQueue:
         old_priority = self.priorities.get(state)
         if old_priority == None or new_priority < old_priority:
             self.priorities[state] = new_priority
-            heapq.heappush(self.heap, (new_priority, state))
+            count = next(self.counter)
+            heapq.heappush(self.heap, (new_priority, count, state))
             return True
         return False
 
@@ -23,7 +26,7 @@ class PriorityQueue:
     # or (None, None) if the priority queue is empty.
     def remove_min(self):
         while len(self.heap) > 0:
-            priority, state = heapq.heappop(self.heap)
+            priority, count, state = heapq.heappop(self.heap)
             if self.priorities[state] == self.REMOVED:
                 # State was previously removed, skip
                 continue
