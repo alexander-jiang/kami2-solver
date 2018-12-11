@@ -3,6 +3,11 @@ import copy
 
 class DepthFirstSearch:
     def solve(self, problem, find_all_solutions=False):
+        """
+        NOTE find_all_solutions won't necessarily find all possible solutions since the
+        visited set only checks the state, so transpositions (i.e. different action sequences that
+        result in the same board state) will be skipped on subsequent runs
+        """
         # actions and total_cost will be set if there is a path,
         # otherwise, they will still be None
         self.actions = None
@@ -40,9 +45,6 @@ class DepthFirstSearch:
             if problem.is_terminal_state(state) == -1:
                 continue
             for (action, next_state, cost) in problem.actions_and_costs(state):
-                # NOTE find_all_solutions won't necessarily find all possible solutions since the
-                # visited set only checks the state, so transpositions (i.e. different action sequences that
-                # result in the same board state) will be skipped on subsequent runs
                 if (next_state not in visited and
                     problem.is_terminal_state(next_state) != -1):
                         actions = copy.deepcopy(prev_actions)
