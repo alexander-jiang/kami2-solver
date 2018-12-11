@@ -8,7 +8,7 @@ class PriorityQueue:
         self.REMOVED = -100000
         self.heap = []
         self.priorities = {}  # Map from state to priority
-        self.counter = itertools.count()     # unique sequence count
+        self.counter = itertools.count() # unique sequence count to break priority ties
 
     # Insert state into heap (with the given priority) if state isn't in the
     # heap or if new priority < existing priority.

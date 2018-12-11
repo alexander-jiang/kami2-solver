@@ -4,42 +4,31 @@ Solver for the mobile puzzle game KAMI 2
 ### Notes:
 
 #### 12/10/2018
-Implemented DFS, UCS, and A* with two different heuristics.
+I've implemented DFS, UCS, and A* with two different heuristics.
 
-It seems that DFS performs better than UCS and A*, but this is likely
-because of how I defined the "terminal states".
+The A* with num_colors_heuristic function now performs better than DFS on puzzle
+18 (see the bugfix below), but worse than DFS on puzzle 17. This is likely
+because puzzle 17 is a 4 move, 4 color puzzle, so DFS will only need to
+enumerate all of the first move options before being forced to either eliminate
+a color or backtrack due to the "failing" terminal states in the state space
+(where there aren't enough moves to possibly solve the puzzle). However, puzzle
+18 is a 5 move, 4 color puzzle, so DFS will have to try the possible
+combinations of the first two moves before getting feedback on whether it has
+reached an "impossible to solve" state.
 
-For example, if you have 2 moves left but there are 4 or more colors on the
-board, it is impossible to solve the puzzle (since each move can reduce the
-number of colors on the board by at most 1). Thus these states are "terminal",
-which forces the DFS to backtrack earlier, and it may get lucky (I've randomly
-shuffled the list of possible subsequent states). If I didn't stop the DFS early
-in these failing states, it would likely perform far worse than UCS or A*.
+I fixed a bug in the num_colors_heuristic function which wasn't counting
+colors that were already contracted to a single node towards reducing the
+heuristic estimate (which would explain why the A* was exploring almost the
+exact same number of states as UCS did: they were almost the same algorithm).
 
-(Note that this fail-early system works best when the number of colors in the
-puzzle is close to the number of moves you have to solve the puzzle e.g. in
-puzzle #17, you have 4 moves to solve a puzzle with 4 colors, so any first move
-that doesn't lead to a state where you can eliminate a color with one move is
-backed out of immediately after visiting it. Similarly, the 3rd and 4th moves
-must also each eliminate one color, so "poor" moves can be quickly discarded.)
-
-On the other hand, the UCS and A* algorithms will enumerate all neighbors, and
-since the distance function is very coarse (every action has step cost 1, and
-even with the heuristics, there are often ties), these algorithms end up looking
-like BFS since they often visit every neighbor.
-
-I haven't yet tried the algorithms on a puzzle where there are significantly
-more moves than colors (e.g. puzzle #89), though I anticipate that these puzzles
-would get exponentially harder for DFS.
-
-Next, I think I should implement a metric for determining which nodes to try
-first in DFS. For example, a simple measure would be to try to color nodes with
+Next, I think I should implement a heuristic that captures the "centrality" of
+certain nodes. For example, a simple measure would be to try to color nodes with
 the highest degree, as these are most likely to pull the graph closer together,
 but more sophisticated measures of centrality could identify "key nodes" in the
 graph that connect many different colors together, making it easier to contract
 the colors in sequence.
 
-For a concrete example, see nodes 9 & 12 in puzzle #17, which are both connected
+For a concrete example, see nodes 9 & 12 in puzzle 17, which are both connected
 to the only white nodes, and then the contracted group with 5 and 10 is
 connected to all blue nodes, etc. Note that in this case, nodes 9 and 12 don't
 have the highest degree, but nodes 5 and 10 both have very high degrees, and so

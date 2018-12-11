@@ -43,15 +43,19 @@ puzzle17_moves_left = 4
 puzzle17_step0 = kami2.PuzzleState(puzzle17_graph, puzzle17_node_colors, puzzle17_moves_left)
 puzzle17 = kami2.Kami2Puzzle(puzzle17_step0)
 
-print("Solving using DFS:")
-search.DepthFirstSearch().solve(puzzle17)
+def main():
+    print("Solving using DFS:")
+    search.DepthFirstSearch().solve(puzzle17)
 
-print("Solving using UCS:")
-search.UniformCostSearch().solve(puzzle17)
+    # print("Solving using UCS:")
+    # search.UniformCostSearch().solve(puzzle17)
 
-print("Solving using A* (# colors heuristic):")
-informed_search.AStarSearch(informed_search.num_colors_heuristic).solve(puzzle17)
+    print("Solving using A* (# colors heuristic):")
+    informed_search.AStarSearch(informed_search.num_colors_heuristic).solve(puzzle17)
+    #
+    # # color distance heuristic is significantly slower but this problem is small enough
+    # print("Solving using A* (color distance heuristic):")
+    # informed_search.AStarSearch(informed_search.color_distance_heuristic).solve(puzzle17)
 
-# color distance heuristic is significantly slower...
-print("Solving using A* (color distance heuristic):")
-informed_search.AStarSearch(informed_search.color_distance_heuristic).solve(puzzle17)
+if __name__ == "__main__":
+    main()

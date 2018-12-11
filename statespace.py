@@ -7,6 +7,8 @@ class Kami2Puzzle:
         Creates a puzzle based on the initial state of the puzzle.
         """
         self.initial_state = initial_state
+        self.solution = None
+        self.num_states_explored = None
 
     def start_state(self):
         """
@@ -35,7 +37,7 @@ class Kami2Puzzle:
                 new_state = state.set_color(node, new_color)
                 cost = 1
                 results.append(((node, new_color), new_state, cost))
-        random.shuffle(results)
+        # random.shuffle(results)
         return results
 
     def is_terminal_state(self, state):
