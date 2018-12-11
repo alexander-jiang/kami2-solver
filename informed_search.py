@@ -6,18 +6,24 @@ import deterministic_search as search
 
 def num_colors_heuristic(state):
     """
-    If there are more nodes than colors, then at least one color must be
-    in multiple nodes, so an optimistic estimate is that it will take 1
-    move to contract a single color to a single node, and that all
+    If any color is only in one node, then an optimistic estimate is that all
     subsequent moves will be able to simultaneously eliminate a color and
-    contract one of the remaining colors to a single node.
-    Otherwise, if all colors are all already contracted to one node each,
-    then it takes exactly (# colors) - 1 moves to solve the puzzle.
+    contract one of the remaining colors to a single node i.e. it must take at
+    least (# colors) - 1 moves to solve the puzzle.
+    If not, then we optimistically assume that a color can be contracted to a
+    single node in one move, and then one color can be eliminated per move after
+    that i.e. it must take at least (# colors) moves to solve the puzzle.
     """
-    if len(state.nodes()) > state.num_colors():
-        return state.num_colors()
-    else:
-        return state.num_colors() - 1
+    color_counts = {}
+    for color in state.colors:
+        color_counts[color] = 0
+    for node in state.nodes():
+        color_counts[state.get_color(node)] += 1
+
+    for color in state.colors:
+        if color_counts[color] == 1:
+            return state.num_colors() - 1
+    return state.num_colors()
 
 def color_distance_heuristic(state):
     """
