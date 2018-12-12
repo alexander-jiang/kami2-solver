@@ -45,7 +45,7 @@ states vs. 6242 states explored by num colors heuristic). Puzzle 72 is similar
 to puzzle 71 (slightly harder), and the color distance heuristic solved it and
 explored only 26 states!
 
-#### 12/10/2018
+### 12/10/2018
 I've implemented DFS, UCS, and A* with the num_color_heuristic heuristic
 function (see deterministic_search.py and informed_search.py for the search
 algorithms and heuristic functions).
