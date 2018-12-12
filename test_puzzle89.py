@@ -118,8 +118,8 @@ def main():
     # print("Solving using DFS:")
     # search.DepthFirstSearch().solve(puzzle89)
 
-    print("Solving using A* (# colors heuristic):")
-    informed_search.AStarSearch(informed_search.num_colors_heuristic).solve(puzzle89)
+    # print("Solving using A* (# colors heuristic):")
+    # informed_search.AStarSearch(informed_search.num_colors_heuristic).solve(puzzle89)
 
     print("Solving using A* (color distance heuristic):")
     informed_search.AStarSearch(informed_search.color_distance_heuristic).solve(puzzle89)

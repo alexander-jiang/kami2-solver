@@ -128,6 +128,7 @@ def main():
     # print("Solving using A* (# colors heuristic):")
     # informed_search.AStarSearch(informed_search.num_colors_heuristic).solve(puzzle71)
 
+    # 281 states explored, solution:  [(2, 'g'), (2, 'y'), (12, 'y'), (12, 'r'), (12, 'g')]
     print("Solving using A* (color distance heuristic):")
     informed_search.AStarSearch(informed_search.color_distance_heuristic).solve(puzzle71)
 

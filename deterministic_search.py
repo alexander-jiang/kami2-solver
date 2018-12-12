@@ -16,13 +16,13 @@ class DepthFirstSearch:
 
         start_state = problem.start_state()
         frontier = [([], start_state),]
-        visited = []
+        visited = set([])
         actions_tried = []
 
         while len(frontier) > 0:
             prev_actions, state = frontier.pop()
             actions_tried.append(prev_actions)
-            visited.append(state)
+            visited.add(state)
             self.num_states_explored += 1
             if self.num_states_explored % 250 == 0:
                 print("explored", self.num_states_explored, "states")
@@ -63,7 +63,7 @@ class UniformCostSearch:
         frontier = util.PriorityQueue()
         # for backtracking (extracting solution): map state -> action, previous state
         predecessor = {}
-        visited = []
+        visited = set([])
 
         start_state = problem.start_state()
         frontier.update(start_state, 0)
@@ -79,7 +79,7 @@ class UniformCostSearch:
             # print(prev_actions)
             # print("g_cost =", g_cost)
 
-            visited.append(state)
+            visited.add(state)
             self.num_states_explored += 1
             if self.num_states_explored % 250 == 0:
                 print("explored", self.num_states_explored, "states")

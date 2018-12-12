@@ -40,7 +40,10 @@ explores about half as many states as the num color heuristic function in
 puzzle 18 (64 vs. 131).
 
 The new heuristic function now makes puzzle 54 tractable (solved and explored
-952 states).
+952 states) and shows a huge improvement in solving puzzle 71 (explored only 281
+states vs. 6242 states explored by num colors heuristic). Puzzle 72 is similar
+to puzzle 71 (slightly harder), and the color distance heuristic solved it and
+explored only 26 states!
 
 #### 12/10/2018
 I've implemented DFS, UCS, and A* with the num_color_heuristic heuristic

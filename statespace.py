@@ -1,6 +1,7 @@
 import copy
 import random
 
+
 class Kami2Puzzle:
     def __init__(self, initial_state):
         """
@@ -92,21 +93,23 @@ class PuzzleState:
         for node in graph:
             for nbr in graph[node]:
                 assert node in graph[nbr], "Graph validation failed: missing %d -> %d" % (nbr, node)
+                assert node_colors[node] != node_colors[nbr], "%d and %d have the same color %s" % (node, nbr, node_colors[node])
 
     def __hash__(self):
         return hash((
-            frozenset(self.graph.items()),
+            self.moves_left,
             frozenset(self.node_colors.items()),
-            self.moves_left
+            frozenset(self.graph.items()),
         ))
 
     def __eq__(self, other):
         """
         Compares states for equality.
         """
-        return (self.graph == other.graph and
+        return (self.moves_left == other.moves_left and
             self.node_colors == other.node_colors and
-            self.moves_left == other.moves_left)
+            self.graph.keys() == other.graph.keys() and
+            self.graph == other.graph)
 
     def __neq__(self, other):
         return not self.__eq__(other)
@@ -167,24 +170,41 @@ class PuzzleState:
         """
         Gets the pairwise distances between nodes in the graph (memoized).
         """
-        def floyd_warshall(graph):
-            distances = {}
-            num_nodes = len(graph.keys())
-            for node in graph:
-                distances[node] = {}
-                for node2 in graph:
-                    distances[node][node2] = float('inf')
-            for node in graph:
-                for neighbor in graph[node]:
-                    distances[node][neighbor] = 1
-                distances[node][node] = 0
-            for midnode in graph:
-                for src in graph:
-                    for sink in graph:
-                        if distances[src][sink] > distances[src][midnode] + distances[midnode][sink]:
-                            distances[src][sink] = distances[src][midnode] + distances[midnode][sink]
-            return distances
+        def brandes(graph):
+            """
+            Since graph is unweighted and undirected, use BFS to compute
+            pairwise distances (Brandes' algorithm computes more centrality
+            measures, which we may not need).
+            """
+            dist = {}
+            for node_s in graph:
+                # stack = []
+                # pred = {}
+                # num_shortest_paths = {}
+                dist[node_s] = {}
+                for node in graph:
+                    # pred[node] = []
+                    dist[node_s][node] = -1
+                    # num_shortest_paths[node] = 0
+                # num_shortest_paths[node_s] = 1
+                dist[node_s][node_s] = 0
+
+                queue = []
+                queue.append(node_s)
+                while len(queue) > 0:
+                    node_v = queue.pop(0)
+                    # stack.append(node_v)
+                    for nbr in graph[node_v]:
+                        # was this neighbor found before?
+                        if dist[node_s][nbr] < 0:
+                            queue.append(nbr)
+                            dist[node_s][nbr] = dist[node_s][node_v] + 1
+                        # is shortest path to nbr via node_v?
+                        # if dist[node_s][nbr] == dist[node_s][node_v] + 1:
+                        #     num_shortest_paths[nbr] += num_shortest_paths[node_v]
+                        #     pred[nbr].append(node_v)
+            return dist
 
         if self.pairwise_distances is None:
-            self.pairwise_distances = floyd_warshall(self.graph)
+            self.pairwise_distances = brandes(self.graph)
         return self.pairwise_distances
