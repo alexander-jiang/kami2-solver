@@ -40,6 +40,7 @@ class DepthFirstSearch:
                 # print("explored these actions:")
                 # for action_tried in actions_tried:
                 #     print(action_tried)
+
                 if find_all_solutions: continue
                 else: break
             if problem.is_terminal_state(state) == -1:
@@ -68,6 +69,7 @@ class UniformCostSearch:
         frontier.update(start_state, 0)
         while not frontier.empty():
             state, g_cost = frontier.remove_min()
+
             # print("min cost state from frontier:")
             # prev_actions = []
             # this_state = state
@@ -76,6 +78,7 @@ class UniformCostSearch:
             #     prev_actions.insert(0, action)
             # print(prev_actions)
             # print("g_cost =", g_cost)
+
             visited.append(state)
             self.num_states_explored += 1
             if self.num_states_explored % 250 == 0:

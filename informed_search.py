@@ -34,7 +34,11 @@ def color_distance_heuristic(state):
     that is easiest to contract first, as doing so could help contract other
     colors.
     """
-    # print("WARNING This heuristic is *really* slow...")
+    # if any color has only one node left, we're done
+    if num_colors_heuristic(state) == state.num_colors() - 1:
+        # print("color with only one node")
+        return state.num_colors() - 1
+
     nodes = state.nodes()
     # how many moves to contract one color to a single node?
     moves_to_contract = state.moves_left
@@ -49,13 +53,12 @@ def color_distance_heuristic(state):
 
         for (node1, node2) in itertools.combinations(color_nodes, 2):
             distance = pairwise_distances[node1][node2]
-            # print("distance between %d & %d = %d" % (node1, node2, distance))
-            optimistic_num_moves = (distance + 1) // 2
-            if optimistic_num_moves > max_dist_for_color:
-                max_dist_for_color = optimistic_num_moves
-        # print("moves to contract color %s = %d" % (color, max_dist_for_color))
-        if max_dist_for_color < moves_to_contract:
-            moves_to_contract = max_dist_for_color
+            if distance > max_dist_for_color:
+                max_dist_for_color = distance
+        # print("max dist for color %s = %d" % (color, max_dist_for_color))
+        optimistic_num_moves = (max_dist_for_color + 1) // 2
+        if optimistic_num_moves < moves_to_contract:
+            moves_to_contract = optimistic_num_moves
     return moves_to_contract + state.num_colors() - 1
 
 

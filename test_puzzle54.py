@@ -88,12 +88,12 @@ def main():
     # print("Solving using UCS:")
     # search.UniformCostSearch().solve(puzzle54)
 
-    print("Solving using A* (# colors heuristic):")
-    informed_search.AStarSearch(informed_search.num_colors_heuristic).solve(puzzle54)
+    # print("Solving using A* (# colors heuristic):")
+    # informed_search.AStarSearch(informed_search.num_colors_heuristic).solve(puzzle54)
 
-    # color distance heuristic is significantly slower but this problem is small enough
-    # print("Solving using A* (color distance heuristic):")
-    # informed_search.AStarSearch(informed_search.color_distance_heuristic).solve(puzzle54)
+    # num states explored: 952, actions:  [(4, 'y'), (16, 'r'), (24, 'r'), (30, 'r'), (30, 'y'), (30, 'dg'), (30, 'g')]
+    print("Solving using A* (color distance heuristic):")
+    informed_search.AStarSearch(informed_search.color_distance_heuristic).solve(puzzle54)
 
 if __name__ == "__main__":
     main()

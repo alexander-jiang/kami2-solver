@@ -47,15 +47,14 @@ def main():
     print("Solving using DFS:")
     search.DepthFirstSearch().solve(puzzle17)
 
-    # print("Solving using UCS:")
-    # search.UniformCostSearch().solve(puzzle17)
+    print("Solving using UCS:")
+    search.UniformCostSearch().solve(puzzle17)
 
     print("Solving using A* (# colors heuristic):")
     informed_search.AStarSearch(informed_search.num_colors_heuristic).solve(puzzle17)
 
-    # color distance heuristic is significantly slower but this problem is small enough
-    # print("Solving using A* (color distance heuristic):")
-    # informed_search.AStarSearch(informed_search.color_distance_heuristic).solve(puzzle17)
+    print("Solving using A* (color distance heuristic):")
+    informed_search.AStarSearch(informed_search.color_distance_heuristic).solve(puzzle17)
 
 if __name__ == "__main__":
     main()
