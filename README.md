@@ -12,6 +12,10 @@ for betweenness centrality)
 
 ## Notes:
 
+### 10/16/2019
+Cleaned up the style of the repo (e.g. more consistency between snake_case and
+camelCase), from the initial commit onwards.
+
 ### 12/11/2018
 Fixed a bug with the color distance function and improved its performance:
 - Floyd-Warshall algorithm is overkill: since the graph is unweighted and
