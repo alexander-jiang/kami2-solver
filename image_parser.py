@@ -110,7 +110,7 @@ def main():
     # print(pixel_colors[0:5])
 
     # configure kmeans
-    K = 4
+    K = 4 # if you set K to equal the number of colors that are actually used in the puzzle, this should be very effective
     max_iters = 100
     epsilon = 1.0
     termination_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, max_iters, epsilon)

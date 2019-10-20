@@ -2,7 +2,9 @@
 Solver for the mobile puzzle game KAMI 2
 
 ## To-do:
-- TODO: build a graph parser that constructs the graph from an image of the puzzle
+- WIP: build an image parser that constructs the graph of the puzzle state (i.e.
+the different contiguous regions and the adjacencies between those regions) from
+a screenshot of the puzzle
 - TODO: switch to using a graph module like networkx or graph-tools (the latter
 is better-performing but trickier to install on my Windows machine)
 - TODO: read up on centrality measures in graph theory (e.g. betweenness
@@ -11,6 +13,19 @@ for betweenness centrality)
 
 
 ## Notes:
+
+### 10/19/2019
+Using bilateral filter as preprocessing (to smooth out small differences in color
+from the paper-like texture of the game but leave edges between contiguous regions
+of the same color in the puzzle intact) and then K-means (where K is set to the
+number of colors in the puzzle) seems to work pretty well.
+
+I think it's okay if I have to manually input the number of colors that the puzzle
+has and the number of moves remaining in addition to providing the screenshot: it
+is possible to automatically parse these given the image, but it probably won't
+save that much time (most of the time I spent when turning a puzzle into a puzzle
+state that my solver could operate on was spent on carefully labeling contiguous
+regions and which were adjacent).
 
 ### 10/16/2019
 Cleaned up the style of the repo (e.g. more consistency between snake_case and
