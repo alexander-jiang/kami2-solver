@@ -52,10 +52,7 @@ def convert_to_kmeans_colors(labels, centers):
     converted_puzzle = np.reshape(converted_pixels, (puzzle_height_y, puzzle_width_x, 3))
     return np.asarray(converted_puzzle, dtype=np.uint16)
 
-def assign_pixels_to_nodes(labels):
-    flatten_labels = np.ravel(labels)
-    pixel_labels = np.reshape(flatten_labels, (puzzle_height_y, puzzle_width_x))
-
+def assign_pixels_to_nodes(pixel_labels):
     # parse contiguous regions (i.e. nodes) from converted colors
     pixel_nodes = np.zeros((puzzle_height_y, puzzle_width_x))
     next_node_number = 1
@@ -140,8 +137,19 @@ def label_pixels_by_node(preprocessed_img, debug_print=False):
     # plt.show()
 
     # parse contiguous regions (i.e. nodes) from converted colors
-    pixel_nodes, num_nodes = assign_pixels_to_nodes(labels)
-    return (pixel_nodes, num_nodes)
+    flatten_labels = np.ravel(labels)
+    pixel_labels = np.reshape(flatten_labels, (puzzle_height_y, puzzle_width_x))
+    pixel_nodes, num_nodes = assign_pixels_to_nodes(pixel_labels)
+
+    # assign colors to each node
+    node_colors = {}
+    for i in range(pixel_nodes.shape[0]):
+        for j in range(pixel_nodes.shape[1]):
+            if pixel_nodes[i,j] not in node_colors:
+                node_colors[pixel_nodes[i,j]] = pixel_labels[i,j]
+            elif node_colors[pixel_nodes[i,j]] != pixel_labels[i,j]:
+                print(f"node {pixel_nodes[i,j]} has different K-means labels! {node_colors[pixel_nodes[i,j]]} vs {pixel_labels[i,j]}")
+    return (pixel_nodes, node_colors, num_nodes)
 
 # gets a list of neighboring pixel coordinates (y, x)
 def get_neighbor_coords(pixel_y, pixel_x):
@@ -195,7 +203,7 @@ def parse_image_graph(img_filename, debug_print=False, debug_plots=False):
 
     preprocessed_img = image_preprocessing(img)
 
-    pixel_nodes, num_nodes = label_pixels_by_node(preprocessed_img, debug_print=debug_print)
+    pixel_nodes, node_colors, num_nodes = label_pixels_by_node(preprocessed_img, debug_print=debug_print)
     if debug_print:
         print(f"assigned pixels to contiguous nodes! there are {num_nodes} nodes")
 
@@ -221,7 +229,9 @@ def parse_image_graph(img_filename, debug_print=False, debug_plots=False):
     # with open("output_graph.json", 'w') as f:
     #     json.dump(puzzle_graph_copy, f)
 
-    return puzzle_graph
+    # print(node_colors)
+
+    return puzzle_graph, node_colors
 
 def main():
     parser = argparse.ArgumentParser(description='Given a screenshot of a Kami 2 puzzle, construct the graph representation of the puzzle state.')
