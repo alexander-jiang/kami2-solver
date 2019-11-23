@@ -1,6 +1,7 @@
 import argparse
 import collections
 import copy
+import itertools
 import json
 import numpy as np
 import cv2
@@ -56,27 +57,81 @@ def assign_pixels_to_nodes(pixel_labels):
     # parse contiguous regions (i.e. nodes) from converted colors
     pixel_nodes = np.zeros((puzzle_height_y, puzzle_width_x))
     next_node_number = 1
-    for pixel_y in range(puzzle_height_y):
-        for pixel_x in range(puzzle_width_x):
-            # if pixel was already marked with a node number, then don't change it
-            if pixel_nodes[pixel_y, pixel_x] > 0:
+
+    pixel_coords = [(pixel_y, pixel_x) for pixel_y in range(puzzle_height_y) for pixel_x in range(puzzle_width_x)]
+    for pixel_y, pixel_x in pixel_coords:
+        # if pixel was already marked with a node number, then don't change it
+        if pixel_nodes[pixel_y, pixel_x] > 0:
+            continue
+
+        contiguous_coords = [(pixel_y, pixel_x),]
+        # recursively assign the same node number to all contiguous pixels that are the same color
+        while len(contiguous_coords) > 0:
+            coord_y, coord_x = contiguous_coords.pop(0)
+
+            # already labeled this pixel and added its contiguous neighbors? skip it
+            if pixel_nodes[coord_y, coord_x] > 0:
+                assert pixel_nodes[coord_y, coord_x] == pixel_nodes[pixel_y, pixel_x]
                 continue
 
-            # print(f"new node {next_node_number}: starting with pixel (y={pixel_y}, x={pixel_x})")
-            pixel_nodes[pixel_y, pixel_x] = next_node_number
-            next_node_number += 1
+            # in the first iteration, assign a new node number
+            if coord_y == pixel_y and coord_x == pixel_x:
+                # print(f"new node {next_node_number}: starting with pixel (y={pixel_y}, x={pixel_x})")
+                pixel_nodes[pixel_y, pixel_x] = next_node_number
+                next_node_number += 1
 
-            neighbor_coords = get_neighbor_coords(pixel_y, pixel_x)
+            # label the pixel
+            pixel_nodes[coord_y, coord_x] = pixel_nodes[pixel_y, pixel_x]
 
-            # recursively assign the same node number to all contiguous pixels that are the same color
-            while len(neighbor_coords) > 0:
-                nbr_y, nbr_x = neighbor_coords.pop(0)
-                if pixel_labels[nbr_y, nbr_x] == pixel_labels[pixel_y, pixel_x] and pixel_nodes[nbr_y, nbr_x] == 0:
-                    pixel_nodes[nbr_y, nbr_x] = pixel_nodes[pixel_y, pixel_x]
-                    neighbor_coords.extend(get_neighbor_coords(nbr_y, nbr_x))
+            # find more contiguous neighbors
+            neighbor_coords = get_neighbor_coords(coord_y, coord_x)
+            same_color_nbr_coords = []
+            for nbr_y, nbr_x in neighbor_coords:
+                if pixel_labels[nbr_y, nbr_x] == pixel_labels[coord_y, coord_x]:
+                    same_color_nbr_coords.append((nbr_y, nbr_x))
+
+            # if only one neighbor has the same color or all neighbors have the same color,
+            # then the same-color neighbors are all contiguous (the gap between two triangles in
+            # the puzzle that meet at a point is at most 1 pixel wide)
+            if len(same_color_nbr_coords) == 1 or len(same_color_nbr_coords) == len(neighbor_coords):
+                contiguous_coords.extend([(nbr_y, nbr_x) for nbr_y, nbr_x in same_color_nbr_coords if pixel_nodes[nbr_y, nbr_x] == 0])
+            else:
+                # otherwise, check each pair of adjacent corners (i.e. 90 degrees apart from each other)
+                nearby_coords = set([])
+                for nbr_coords1, nbr_coords2 in itertools.combinations(same_color_nbr_coords, 2):
+                    nbr1_y, nbr1_x = nbr_coords1
+                    nbr2_y, nbr2_x = nbr_coords2
+                    if ((nbr1_y == nbr2_y and (nbr1_y == 0 or nbr1_y == puzzle_height_y - 1)) or
+                        (nbr1_x == nbr2_x and (nbr1_x == 0 or nbr1_x == puzzle_width_x - 1))):
+                        # these neighbors are not adjacent but if they are along an edge, they are contiguous
+                        nearby_coords.add(nbr_coords1)
+                        nearby_coords.add(nbr_coords2)
+                    elif nbr1_y != nbr2_y and nbr1_x != nbr2_x:
+                        # if the corner between them is the same color (i.e. there is a 2x2 square of pixels of the same color)
+                        # then they are contiguous (again, assuming the gap between triangles that meet at a point is at most 1 pixel wide)
+                        corner_y = nbr1_y if nbr1_y != coord_y else nbr2_y
+                        corner_x = nbr1_x if nbr1_x != coord_x else nbr2_x
+                        if pixel_labels[corner_y, corner_x] == pixel_labels[coord_y, coord_x]:
+                            nearby_coords.add(nbr_coords1)
+                            nearby_coords.add(nbr_coords2)
+                            nearby_coords.add((corner_y, corner_x))
+
+                # also check if any neighbor has only one neighbor of the same color
+                for nbr_coord in same_color_nbr_coords:
+                    nbr_y, nbr_x = nbr_coord
+                    neighbor_of_neighbors_coords = get_neighbor_coords(nbr_y, nbr_x)
+                    nbr_same_color_nbr_coords = []
+                    for nbr_nbr_y, nbr_nbr_x in neighbor_of_neighbors_coords:
+                        if pixel_labels[nbr_nbr_y, nbr_nbr_x] == pixel_labels[nbr_y, nbr_x]:
+                            nbr_same_color_nbr_coords.append((nbr_nbr_y, nbr_nbr_x))
+                    if len(nbr_same_color_nbr_coords) == 1:
+                        nearby_coords.add(nbr_coord)
+
+                contiguous_coords.extend([(nbr_y, nbr_x) for nbr_y, nbr_x in nearby_coords if pixel_nodes[nbr_y, nbr_x] == 0])
+
     return (pixel_nodes, next_node_number - 1)
 
-def label_pixels_by_node(preprocessed_img, debug_print=False):
+def label_pixels_by_node(preprocessed_img, num_colors, debug_print=False):
     puzzle = crop_to_puzzle(preprocessed_img)
     # print(puzzle.shape) # y by x by color
     # print(puzzle[0,0:5,:])
@@ -89,7 +144,7 @@ def label_pixels_by_node(preprocessed_img, debug_print=False):
     # print(pixel_colors[0:5])
 
     # configure kmeans
-    K = 4 # if you set K to equal the number of colors that are actually used in the puzzle, this should be very effective
+    K = num_colors # if you set K to equal the number of colors that are actually used in the puzzle, this should be very effective
     max_iters = 100
     epsilon = 1.0
     termination_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, max_iters, epsilon)
@@ -198,12 +253,12 @@ def identify_adjacent_nodes(pixel_nodes, num_nodes, debug_print=False):
         puzzle_graph[this_node] = frozenset(puzzle_graph[this_node])
     return puzzle_graph
 
-def parse_image_graph(img_filename, debug_print=False, debug_plots=False):
+def parse_image_graph(img_filename, num_colors, debug_print=False, debug_plots=False):
     img = get_original_image(img_filename)
 
     preprocessed_img = image_preprocessing(img)
 
-    pixel_nodes, node_colors, num_nodes = label_pixels_by_node(preprocessed_img, debug_print=debug_print)
+    pixel_nodes, node_colors, num_nodes = label_pixels_by_node(preprocessed_img, num_colors, debug_print=debug_print)
     if debug_print:
         print(f"assigned pixels to contiguous nodes! there are {num_nodes} nodes")
 
@@ -237,10 +292,12 @@ def main():
     parser = argparse.ArgumentParser(description='Given a screenshot of a Kami 2 puzzle, construct the graph representation of the puzzle state.')
     parser.add_argument('img_filename', type=str,
                         help='path to the screenshot')
+    parser.add_argument('num_colors', type=int,
+                        help='number of colors in the puzzle (used to help label colors)')
 
     args = parser.parse_args()
     print(args.img_filename)
 
-    parse_image_graph(args.img_filename, debug_print=True, debug_plots=True)
+    parse_image_graph(args.img_filename, args.num_colors, debug_print=True, debug_plots=True)
 
 if __name__ == "__main__": main()

@@ -1,7 +1,7 @@
 import statespace as kami2
 import informed_search
 
-puzzle89_graph = {
+puzzle83_graph = {
     1: frozenset([2, 3]),
     2: frozenset([1, 3, 4]),
     3: frozenset([1, 2, 25]),
@@ -55,7 +55,7 @@ puzzle89_graph = {
     51: frozenset([49, 50]),
     52: frozenset([11,])
 }
-puzzle89_node_colors = {
+puzzle83_node_colors = {
     1: 'g',
     2: 'm',
     3: 'r',
@@ -109,20 +109,20 @@ puzzle89_node_colors = {
     51: 'r',
     52: 'g'
 }
-puzzle89_moves_left = 10
+puzzle83_moves_left = 10
 
-puzzle89_step0 = kami2.PuzzleState(puzzle89_graph, puzzle89_node_colors, puzzle89_moves_left)
-puzzle89 = kami2.Kami2Puzzle(puzzle89_step0)
+puzzle83_step0 = kami2.PuzzleState(puzzle83_graph, puzzle83_node_colors, puzzle83_moves_left)
+puzzle83 = kami2.Kami2Puzzle(puzzle83_step0)
 
 def main():
     # print("Solving using DFS:")
-    # search.DepthFirstSearch().solve(puzzle89)
+    # search.DepthFirstSearch().solve(puzzle83)
 
     # print("Solving using A* (# colors heuristic):")
-    # informed_search.AStarSearch(informed_search.num_colors_heuristic).solve(puzzle89)
+    # informed_search.AStarSearch(informed_search.num_colors_heuristic).solve(puzzle83)
 
     print("Solving using A* (color distance heuristic):")
-    informed_search.AStarSearch(informed_search.color_distance_heuristic).solve(puzzle89)
+    informed_search.AStarSearch(informed_search.color_distance_heuristic).solve(puzzle83)
 
 if __name__ == "__main__":
     main()
