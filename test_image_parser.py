@@ -62,7 +62,7 @@ class TestImageParser(unittest.TestCase):
 
     def test_parse_puzzle33(self):
         puzzle_img = "kami2puzzle33.png"
-        puzzle33_num_colors = 4
+        puzzle33_num_colors = 3
         self.puzzle_parse_testing(puzzle_img, puzzle33_num_colors, puzzle33_graph, puzzle33_node_colors)
 
     # TODO check that the image parser can handle a puzzle screenshot with blank space

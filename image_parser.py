@@ -53,81 +53,97 @@ def convert_to_kmeans_colors(labels, centers):
     converted_puzzle = np.reshape(converted_pixels, (puzzle_height_y, puzzle_width_x, 3))
     return np.asarray(converted_puzzle, dtype=np.uint16)
 
-def assign_pixels_to_nodes(pixel_labels):
+def assign_pixels_to_nodes(pixel_labels, num_labels):
     # parse contiguous regions (i.e. nodes) from converted colors
     pixel_nodes = np.zeros((puzzle_height_y, puzzle_width_x))
     next_node_number = 1
 
-    pixel_coords = [(pixel_y, pixel_x) for pixel_y in range(puzzle_height_y) for pixel_x in range(puzzle_width_x)]
-    for pixel_y, pixel_x in pixel_coords:
-        # if pixel was already marked with a node number, then don't change it
-        if pixel_nodes[pixel_y, pixel_x] > 0:
-            continue
+    masks_by_label = np.zeros((num_labels, pixel_labels.shape[0], pixel_labels.shape[1]))
 
-        contiguous_coords = [(pixel_y, pixel_x),]
-        # recursively assign the same node number to all contiguous pixels that are the same color
-        while len(contiguous_coords) > 0:
-            coord_y, coord_x = contiguous_coords.pop(0)
+    erosion_kernel = np.ones((3, 3), dtype=np.uint8)
+    dilation_kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3,3))
+    pixel_labels_ndarray = np.array(pixel_labels)
 
-            # already labeled this pixel and added its contiguous neighbors? skip it
-            if pixel_nodes[coord_y, coord_x] > 0:
-                assert pixel_nodes[coord_y, coord_x] == pixel_nodes[pixel_y, pixel_x]
-                continue
+    for label_num in range(num_labels):
+        # construct binary bitmask of the pixel_labels (1 for each pixel of that label, 0 otherwise)
+        masks_by_label[label_num] = np.where(pixel_labels_ndarray == label_num, 1, 0)
 
-            # in the first iteration, assign a new node number
-            if coord_y == pixel_y and coord_x == pixel_x:
-                # print(f"new node {next_node_number}: starting with pixel (y={pixel_y}, x={pixel_x})")
+        # erode by 3x3 square kernel, and then dilate by a 3x3 cross kernel to leave
+        # a thin strip of pixels between neighboring regions
+        erosion = cv2.erode(masks_by_label[label_num], erosion_kernel, iterations=1)
+        dilation = cv2.dilate(erosion, dilation_kernel, iterations=1)
+
+        # fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
+        # ax1.imshow(masks_by_label[label_num], cmap='gray')
+        # ax1.set_title(f"initial mask for label {label_num}")
+        #
+        # ax2.imshow(erosion, cmap='gray')
+        # ax2.set_title(f"label {label_num} mask after erosion")
+        #
+        # ax3.imshow(dilation, cmap='gray')
+        # ax3.set_title(f"label {label_num} mask after erosion & dilation")
+        # plt.show()
+
+        # label each contiguous region in the resulting mask as a separate node
+        for pixel_y in range(puzzle_height_y):
+            for pixel_x in range(puzzle_width_x):
+                # if pixel is not in the dilated mask or is already labeled, skip it
+                if dilation[pixel_y, pixel_x] == 0 or pixel_nodes[pixel_y, pixel_x] > 0:
+                    continue
+
+                print(f"new node {next_node_number}: starting with pixel (y={pixel_y}, x={pixel_x})")
                 pixel_nodes[pixel_y, pixel_x] = next_node_number
                 next_node_number += 1
 
-            # label the pixel
-            pixel_nodes[coord_y, coord_x] = pixel_nodes[pixel_y, pixel_x]
+                neighbor_coords = get_neighbor_coords(pixel_y, pixel_x)
+                # recursively assign the same node number to all contiguous pixels that are also in the dilation mask
+                while len(neighbor_coords) > 0:
+                    nbr_y, nbr_x = neighbor_coords.pop(0)
+                    if pixel_nodes[nbr_y, nbr_x] == 0 and dilation[nbr_y, nbr_x] == 1:
+                        pixel_nodes[nbr_y, nbr_x] = pixel_nodes[pixel_y, pixel_x]
+                        neighbor_coords.extend(get_neighbor_coords(nbr_y, nbr_x))
 
-            # find more contiguous neighbors
-            neighbor_coords = get_neighbor_coords(coord_y, coord_x)
-            same_color_nbr_coords = []
-            for nbr_y, nbr_x in neighbor_coords:
-                if pixel_labels[nbr_y, nbr_x] == pixel_labels[coord_y, coord_x]:
-                    same_color_nbr_coords.append((nbr_y, nbr_x))
+    before_fill_in = pixel_nodes.copy()
 
-            # if only one neighbor has the same color or all neighbors have the same color,
-            # then the same-color neighbors are all contiguous (the gap between two triangles in
-            # the puzzle that meet at a point is at most 1 pixel wide)
-            if len(same_color_nbr_coords) == 1 or len(same_color_nbr_coords) == len(neighbor_coords):
-                contiguous_coords.extend([(nbr_y, nbr_x) for nbr_y, nbr_x in same_color_nbr_coords if pixel_nodes[nbr_y, nbr_x] == 0])
-            else:
-                # otherwise, check each pair of adjacent corners (i.e. 90 degrees apart from each other)
-                nearby_coords = set([])
-                for nbr_coords1, nbr_coords2 in itertools.combinations(same_color_nbr_coords, 2):
-                    nbr1_y, nbr1_x = nbr_coords1
-                    nbr2_y, nbr2_x = nbr_coords2
-                    if ((nbr1_y == nbr2_y and (nbr1_y == 0 or nbr1_y == puzzle_height_y - 1)) or
-                        (nbr1_x == nbr2_x and (nbr1_x == 0 or nbr1_x == puzzle_width_x - 1))):
-                        # these neighbors are not adjacent but if they are along an edge, they are contiguous
-                        nearby_coords.add(nbr_coords1)
-                        nearby_coords.add(nbr_coords2)
-                    elif nbr1_y != nbr2_y and nbr1_x != nbr2_x:
-                        # if the corner between them is the same color (i.e. there is a 2x2 square of pixels of the same color)
-                        # then they are contiguous (again, assuming the gap between triangles that meet at a point is at most 1 pixel wide)
-                        corner_y = nbr1_y if nbr1_y != coord_y else nbr2_y
-                        corner_x = nbr1_x if nbr1_x != coord_x else nbr2_x
-                        if pixel_labels[corner_y, corner_x] == pixel_labels[coord_y, coord_x]:
-                            nearby_coords.add(nbr_coords1)
-                            nearby_coords.add(nbr_coords2)
-                            nearby_coords.add((corner_y, corner_x))
+    # fill in pixels that weren't part of any mask (the pixels along the borders)
+    any_updates = True
+    while any_updates:
+        tmp_pixel_nodes = pixel_nodes.copy()
+        any_updates = False
+        for pixel_y in range(puzzle_height_y):
+            for pixel_x in range(puzzle_width_x):
+                # if pixel is already labeled, skip it
+                if tmp_pixel_nodes[pixel_y, pixel_x] > 0:
+                    continue
 
-                # also check if any neighbor has only one neighbor of the same color
-                for nbr_coord in same_color_nbr_coords:
-                    nbr_y, nbr_x = nbr_coord
-                    neighbor_of_neighbors_coords = get_neighbor_coords(nbr_y, nbr_x)
-                    nbr_same_color_nbr_coords = []
-                    for nbr_nbr_y, nbr_nbr_x in neighbor_of_neighbors_coords:
-                        if pixel_labels[nbr_nbr_y, nbr_nbr_x] == pixel_labels[nbr_y, nbr_x]:
-                            nbr_same_color_nbr_coords.append((nbr_nbr_y, nbr_nbr_x))
-                    if len(nbr_same_color_nbr_coords) == 1:
-                        nearby_coords.add(nbr_coord)
+                neighbor_coords = get_neighbor_coords(pixel_y, pixel_x)
+                # if the labels on neighbors are all the same, use that label
+                nbr_labels = []
+                should_update = False # update only if all labeled neighbors share the same label
+                for nbr_y, nbr_x in neighbor_coords:
+                    if pixel_nodes[nbr_y, nbr_x] != 0:
+                        nbr_labels.append(pixel_nodes[nbr_y, nbr_x])
 
-                contiguous_coords.extend([(nbr_y, nbr_x) for nbr_y, nbr_x in nearby_coords if pixel_nodes[nbr_y, nbr_x] == 0])
+                should_update = True if len(nbr_labels) > 0 else False
+                for nbr_label in nbr_labels:
+                    if nbr_label != nbr_labels[0]:
+                        should_update = False
+                if should_update:
+                    tmp_pixel_nodes[pixel_y, pixel_x] = nbr_labels[0]
+                    # print(f"updated {(pixel_y, pixel_x)} to label {nbr_labels[0]}")
+                    any_updates = True
+        pixel_nodes = tmp_pixel_nodes.copy()
+
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    c1 = ax1.pcolormesh(before_fill_in, cmap='jet')
+    ax1.invert_yaxis()
+    ax1.set_title("node groupings")
+    fig.colorbar(c1, ax=ax1)
+
+    c2 = ax2.pcolormesh(pixel_nodes, cmap='jet')
+    ax2.invert_yaxis()
+    ax2.set_title("grouping after fill-in")
+    fig.colorbar(c2, ax=ax2)
 
     return (pixel_nodes, next_node_number - 1)
 
@@ -163,17 +179,17 @@ def label_pixels_by_node(preprocessed_img, num_colors, debug_print=False):
     palette = crop_to_color_palette(preprocessed_img)
 
     # compare the k-means colors to the color palette
-    fig, (ax1, ax2) = plt.subplots(1, 2)
-    centers_rgb = [(center[2] / 255.0, center[1] / 255.0, center[0] / 255.0) for center in centers]
-    bounds = np.arange(K+1)
-    cmap = matplotlib.colors.ListedColormap(centers_rgb)
-    norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
-    cb2 = matplotlib.colorbar.ColorbarBase(ax1, cmap=cmap, norm=norm, orientation='horizontal')
-    ax1.set_title(f"k means colors (k = {K})")
-
-    ax2.imshow(cv2.cvtColor(palette, cv2.COLOR_BGR2RGB))
-    ax2.axis('off')
-    ax2.set_title("color palette from original image")
+    # fig, (ax1, ax2) = plt.subplots(1, 2)
+    # centers_rgb = [(center[2] / 255.0, center[1] / 255.0, center[0] / 255.0) for center in centers]
+    # bounds = np.arange(K+1)
+    # cmap = matplotlib.colors.ListedColormap(centers_rgb)
+    # norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
+    # cb2 = matplotlib.colorbar.ColorbarBase(ax1, cmap=cmap, norm=norm, orientation='horizontal')
+    # ax1.set_title(f"k means colors (k = {K})")
+    #
+    # ax2.imshow(cv2.cvtColor(palette, cv2.COLOR_BGR2RGB))
+    # ax2.axis('off')
+    # ax2.set_title("color palette from original image")
     # plt.show()
 
     converted_puzzle = convert_to_kmeans_colors(labels, centers)
@@ -192,9 +208,10 @@ def label_pixels_by_node(preprocessed_img, num_colors, debug_print=False):
     # plt.show()
 
     # parse contiguous regions (i.e. nodes) from converted colors
+    num_labels = len(centers)
     flatten_labels = np.ravel(labels)
     pixel_labels = np.reshape(flatten_labels, (puzzle_height_y, puzzle_width_x))
-    pixel_nodes, num_nodes = assign_pixels_to_nodes(pixel_labels)
+    pixel_nodes, num_nodes = assign_pixels_to_nodes(pixel_labels, num_labels)
 
     # assign colors to each node
     node_colors = {}
@@ -202,8 +219,8 @@ def label_pixels_by_node(preprocessed_img, num_colors, debug_print=False):
         for j in range(pixel_nodes.shape[1]):
             if pixel_nodes[i,j] not in node_colors:
                 node_colors[pixel_nodes[i,j]] = pixel_labels[i,j]
-            elif node_colors[pixel_nodes[i,j]] != pixel_labels[i,j]:
-                print(f"node {pixel_nodes[i,j]} has different K-means labels! {node_colors[pixel_nodes[i,j]]} vs {pixel_labels[i,j]}")
+            # elif node_colors[pixel_nodes[i,j]] != pixel_labels[i,j]:
+            #     print(f"node {pixel_nodes[i,j]} has different K-means labels! {node_colors[pixel_nodes[i,j]]} vs {pixel_labels[i,j]}")
     return (pixel_nodes, node_colors, num_nodes)
 
 # gets a list of neighboring pixel coordinates (y, x)
@@ -225,6 +242,10 @@ def identify_adjacent_nodes(pixel_nodes, num_nodes, debug_print=False):
     for i in range(1, num_nodes + 1):
         puzzle_graph[i] = set([])
         counts[i] = collections.Counter()
+
+    ## TODO also have to consider that there are some pixels labeled with 0
+    ## i.e. not assigned to a node yet because they are neighboring to more than
+    ## one region. These nodes can still be used to mark dependencies
 
     for i in range(pixel_nodes.shape[0]):
         for j in range(pixel_nodes.shape[1]):
