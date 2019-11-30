@@ -91,7 +91,7 @@ def assign_pixels_to_nodes(pixel_labels, num_labels):
                 if dilation[pixel_y, pixel_x] == 0 or pixel_nodes[pixel_y, pixel_x] > 0:
                     continue
 
-                print(f"new node {next_node_number}: starting with pixel (y={pixel_y}, x={pixel_x})")
+                # print(f"new node {next_node_number}: starting with pixel (y={pixel_y}, x={pixel_x})")
                 pixel_nodes[pixel_y, pixel_x] = next_node_number
                 next_node_number += 1
 
@@ -134,16 +134,17 @@ def assign_pixels_to_nodes(pixel_labels, num_labels):
                     any_updates = True
         pixel_nodes = tmp_pixel_nodes.copy()
 
-    fig, (ax1, ax2) = plt.subplots(1, 2)
-    c1 = ax1.pcolormesh(before_fill_in, cmap='jet')
-    ax1.invert_yaxis()
-    ax1.set_title("node groupings")
-    fig.colorbar(c1, ax=ax1)
-
-    c2 = ax2.pcolormesh(pixel_nodes, cmap='jet')
-    ax2.invert_yaxis()
-    ax2.set_title("grouping after fill-in")
-    fig.colorbar(c2, ax=ax2)
+    ## Debugging the fill-in process
+    # fig, (ax1, ax2) = plt.subplots(1, 2)
+    # c1 = ax1.pcolormesh(before_fill_in, cmap='jet')
+    # ax1.invert_yaxis()
+    # ax1.set_title("node groupings")
+    # fig.colorbar(c1, ax=ax1)
+    #
+    # c2 = ax2.pcolormesh(pixel_nodes, cmap='jet')
+    # ax2.invert_yaxis()
+    # ax2.set_title("grouping after fill-in")
+    # fig.colorbar(c2, ax=ax2)
 
     return (pixel_nodes, next_node_number - 1)
 
@@ -213,14 +214,29 @@ def label_pixels_by_node(preprocessed_img, num_colors, debug_print=False):
     pixel_labels = np.reshape(flatten_labels, (puzzle_height_y, puzzle_width_x))
     pixel_nodes, num_nodes = assign_pixels_to_nodes(pixel_labels, num_labels)
 
-    # assign colors to each node
-    node_colors = {}
+    # count the number of pixels of each color for each node
+    node_color_counts = {}
     for i in range(pixel_nodes.shape[0]):
         for j in range(pixel_nodes.shape[1]):
-            if pixel_nodes[i,j] not in node_colors:
-                node_colors[pixel_nodes[i,j]] = pixel_labels[i,j]
-            # elif node_colors[pixel_nodes[i,j]] != pixel_labels[i,j]:
-            #     print(f"node {pixel_nodes[i,j]} has different K-means labels! {node_colors[pixel_nodes[i,j]]} vs {pixel_labels[i,j]}")
+            # if pixel is still unlabeled, skip it
+            if pixel_nodes[i,j] == 0:
+                continue
+            if pixel_nodes[i,j] not in node_color_counts:
+                node_color_counts[pixel_nodes[i,j]] = collections.Counter()
+            node_color_counts[pixel_nodes[i,j]][pixel_labels[i,j]] += 1
+
+    # assign colors to each node (assign to the most frequent node)
+    node_colors = {}
+    for node_num in node_color_counts:
+        label = None
+        max_count = float("-inf")
+        for potential_label in node_color_counts[node_num]:
+            if node_color_counts[node_num][potential_label] > max_count:
+                label = potential_label
+                max_count = node_color_counts[node_num][potential_label]
+        # print(f"assigning node {node_num} to label {label}")
+        node_colors[node_num] = label
+
     return (pixel_nodes, node_colors, num_nodes)
 
 # gets a list of neighboring pixel coordinates (y, x)
@@ -243,32 +259,34 @@ def identify_adjacent_nodes(pixel_nodes, num_nodes, debug_print=False):
         puzzle_graph[i] = set([])
         counts[i] = collections.Counter()
 
-    ## TODO also have to consider that there are some pixels labeled with 0
-    ## i.e. not assigned to a node yet because they are neighboring to more than
-    ## one region. These nodes can still be used to mark dependencies
+    for pixel_y in range(pixel_nodes.shape[0]):
+        for pixel_x in range(pixel_nodes.shape[1]):
+            neighbor_coords = get_neighbor_coords(pixel_y, pixel_x)
 
-    for i in range(pixel_nodes.shape[0]):
-        for j in range(pixel_nodes.shape[1]):
-            this_node = pixel_nodes[i, j]
+            this_label = pixel_nodes[pixel_y, pixel_x]
 
-            if i > 0 and pixel_nodes[i-1, j] != this_node:
-                counts[this_node][pixel_nodes[i-1, j]] += 1
-            if i < pixel_nodes.shape[0] - 1 and pixel_nodes[i+1, j] != this_node:
-                counts[this_node][pixel_nodes[i+1, j]] += 1
-            if j > 0 and pixel_nodes[i, j-1] != this_node:
-                counts[this_node][pixel_nodes[i, j-1]] += 1
-            if j < pixel_nodes.shape[1] - 1 and pixel_nodes[i, j+1] != this_node:
-                counts[this_node][pixel_nodes[i, j+1]] += 1
-
+            if this_label > 0:
+                for nbr_y, nbr_x in neighbor_coords:
+                    if pixel_nodes[nbr_y, nbr_x] != this_label and pixel_nodes[nbr_y, nbr_x] > 0:
+                        counts[this_label][pixel_nodes[nbr_y, nbr_x]] += 1
+            else:
+                # if this pixel was not labeled, it was neighboring to more than one contiguous region
+                # so you can add edges between the nodes that are neighboring this pixel
+                nbr_labels = set([])
+                for nbr_y, nbr_x in neighbor_coords:
+                    if pixel_nodes[nbr_y, nbr_x] != 0:
+                        nbr_labels.add(pixel_nodes[nbr_y, nbr_x])
+                for label1, label2 in itertools.combinations(nbr_labels, 2):
+                    counts[label1][label2] += 1
 
     for this_node in range(1, num_nodes + 1):
         for potential_nbr in counts[this_node]:
-            # set a reasonable threshold to avoid two opposit "corners" being marked as adjacent (corner cases, literally!)
-            if counts[this_node][potential_nbr] > 5:
+            # set a reasonable threshold to avoid two opposite "corners" being marked as adjacent (corner cases, literally!)
+            if counts[this_node][potential_nbr] > 15:
                 puzzle_graph[this_node].add(potential_nbr)
                 puzzle_graph[potential_nbr].add(this_node)
-            if debug_print:
-                print(f"neighbors of node {this_node} = {puzzle_graph[this_node]}")
+        if debug_print:
+            print(f"neighbors of node {this_node} = {puzzle_graph[this_node]}")
 
     for this_node in range(1, num_nodes + 1):
         puzzle_graph[this_node] = frozenset(puzzle_graph[this_node])
