@@ -3,6 +3,7 @@ import itertools
 from test_puzzle17 import puzzle17_graph, puzzle17_node_colors
 from test_puzzle18 import puzzle18_graph, puzzle18_node_colors
 from test_puzzle33 import puzzle33_graph, puzzle33_node_colors
+from test_puzzle98 import puzzle98_graph, puzzle98_node_colors
 from image_parser import parse_image_graph
 import networkx as nx
 
@@ -224,6 +225,11 @@ class TestImageParser(unittest.TestCase):
         puzzle_img = "kami2puzzle33.png"
         puzzle33_num_colors = 3
         self.puzzle_parse_testing(puzzle_img, puzzle33_num_colors, puzzle33_graph, puzzle33_node_colors)
+
+    def test_parse_puzzle98(self):
+        puzzle_img = "kami2puzzle98.png"
+        puzzle98_num_colors = 5
+        self.puzzle_parse_testing(puzzle_img, puzzle98_num_colors, puzzle98_graph, puzzle98_node_colors)
 
     # TODO check that the image parser can handle a puzzle screenshot with blank space
 
