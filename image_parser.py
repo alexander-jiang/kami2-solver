@@ -41,7 +41,7 @@ def crop_to_color_palette(full_screenshot_img):
     start_x = 300
     height_y = 124
     width_x = 450
-    return img_copy[0:puzzle_height_y, 0:puzzle_width_x]
+    return img_copy[start_y:start_y+height_y, start_x:start_x+width_x]
 
 def convert_to_kmeans_colors(labels, centers):
     flatten_labels = np.ravel(labels)
@@ -82,7 +82,7 @@ def assign_pixels_to_nodes(pixel_labels, num_labels):
         #
         # ax3.imshow(dilation, cmap='gray')
         # ax3.set_title(f"label {label_num} mask after erosion & dilation")
-        # plt.show()
+        plt.show()
 
         # label each contiguous region in the resulting mask as a separate node
         for pixel_y in range(puzzle_height_y):
@@ -191,7 +191,7 @@ def label_pixels_by_node(preprocessed_img, num_colors, debug_print=False):
     # ax2.imshow(cv2.cvtColor(palette, cv2.COLOR_BGR2RGB))
     # ax2.axis('off')
     # ax2.set_title("color palette from original image")
-    # plt.show()
+    plt.show()
 
     converted_puzzle = convert_to_kmeans_colors(labels, centers)
     # print(converted_puzzle.shape)
