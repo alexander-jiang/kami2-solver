@@ -67,6 +67,7 @@ class UniformCostSearch:
 
         start_state = problem.start_state()
         frontier.update(start_state, 0)
+        previous_g_cost = None
         while not frontier.empty():
             state, g_cost = frontier.remove_min()
 
@@ -81,6 +82,10 @@ class UniformCostSearch:
 
             visited.add(state)
             self.num_states_explored += 1
+            if previous_g_cost != g_cost:
+                previous_g_cost = g_cost
+                print(f"new g cost: {previous_g_cost}")
+            
             if self.num_states_explored % 250 == 0:
                 print("explored", self.num_states_explored, "states")
 
