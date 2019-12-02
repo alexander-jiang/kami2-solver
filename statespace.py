@@ -92,6 +92,7 @@ class PuzzleState:
         # Graph edge validation: make sure for every edge A -> B there is B -> A
         for node in graph:
             for nbr in graph[node]:
+                assert nbr != node, "Graph validation failed: self-loop exists on node %d" % (node,)
                 assert node in graph[nbr], "Graph validation failed: missing %d -> %d" % (nbr, node)
                 assert node_colors[node] != node_colors[nbr], "%d and %d have the same color %s" % (node, nbr, node_colors[node])
 
