@@ -18,7 +18,7 @@ class PriorityQueue:
         if old_priority == None or new_priority < old_priority:
             self.priorities[state] = new_priority
             count = next(self.counter)
-            heapq.heappush(self.heap, (new_priority, count, state))
+            heapq.heappush(self.heap, (new_priority, state.moves_left, -count, state))
             return True
         return False
 
@@ -26,7 +26,7 @@ class PriorityQueue:
     # or (None, None) if the priority queue is empty.
     def remove_min(self):
         while len(self.heap) > 0:
-            priority, count, state = heapq.heappop(self.heap)
+            priority, moves_left, count, state = heapq.heappop(self.heap)
             if self.priorities[state] == self.REMOVED:
                 # State was previously removed, skip
                 continue
