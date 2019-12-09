@@ -14,6 +14,28 @@ for betweenness centrality)
 
 ## Notes:
 
+### 12/08/2019
+Some improvements to the solver algorithm:
+- update the priority queue tiebreaking to choose states with fewer moves left first,
+and then break ties by LIFO (instead of FIFO, which was how it was originally implemented).
+This keeps expanding the frontier at states that are close to the goal and instead of
+backtracking to an earlier state.
+- Include heuristic function when checking if the state is a terminal state
+
+The image parser seems to work consistently well on puzzles without whitespace (i.e.
+where all tiles are one of the colors in the palette). The whitespace/background in
+puzzles is difficult to parse because it has a pretty significant gradient, making
+preprocessing less effective, and causing the whitespace/background to sometimes
+be parsed as one or two colors, depending on which parts of the background are visible.
+
+The image parser uses K-means to distinguish the colors in the puzzle from each other
+(for now, the number of colors must be manually fed into the parser, but it could be
+possible to do edge detection on the color palette at the bottom of the screen), with
+some pre-processing (bilateral filter to smooth out the paper-like texture within each
+contiguous region while preserving edges) and post-processing (morphological operations
+to avoid marking two same-colored regions that touch at a vertex as contiguous and to
+remove noise from the k-means step).
+
 ### 10/19/2019
 Using bilateral filter as preprocessing (to smooth out small differences in color
 from the paper-like texture of the game but leave edges between contiguous regions
