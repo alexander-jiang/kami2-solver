@@ -79,9 +79,28 @@ def transform_a_star_to_ucs(problem, heuristic):
 
         def actions_and_costs(self, state):
             actions_costs = problem.actions_and_costs(state)
+            ## TODO use a "soft heuristic" to order the different actions
+            ## e.g. average of the graph diameter for each color
+
+            prev_state_heuristic = state.update_heuristic_value(heuristic)
             for i in range(len(actions_costs)):
                 action, new_state, cost = actions_costs[i]
-                new_cost = cost + heuristic(new_state) - heuristic(state)
+                new_state_heuristic = new_state.update_heuristic_value(heuristic)
+                new_cost = cost + new_state_heuristic - prev_state_heuristic
+                # if new_state_heuristic < prev_state_heuristic:
+                #     print(f"new state after action {action}:")
+                #     print(f"nodes {[node for node in state.graph if node not in new_state.graph]} removed")
+                #     # for node in state.graph:
+                #     #     if node not in new_state.graph:
+                #     #         print(f"node {node} removed")
+                #     #     else:
+                #     #         if node in new_state.graph and state.graph[node] != new_state.graph[node]:
+                #     #             print(f"neighbors of node {node}: {state.graph[node]} -> {new_state.graph[node]}")
+                #     print(f"current state vs initial state:")
+                #     print(f"nodes {[node for node in problem.start_state().graph if node not in state.graph]} removed")
+                #     print(f"heuristic of new state = {heuristic(new_state)} vs current state = {heuristic(state)}")
+                #     print(f"new state: {new_state.moves_left} moves left")
+                #     input("enter to continue...")
                 actions_costs[i] = action, new_state, new_cost
             return actions_costs
     new_problem = NewKami2Puzzle(problem.start_state())

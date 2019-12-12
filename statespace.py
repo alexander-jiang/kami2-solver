@@ -170,6 +170,7 @@ class PuzzleState:
 
         return PuzzleState(new_graph, new_node_colors, self.moves_left - 1)
 
+    ## TODO this assumes the heuristic function doesn't change across calls to update_heuristic_value()
     def update_heuristic_value(self, heuristic_func):
         if self.heuristic_val is None:
             self.heuristic_val = heuristic_func(self)
