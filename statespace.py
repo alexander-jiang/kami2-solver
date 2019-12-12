@@ -1,6 +1,6 @@
 import copy
 import random
-
+import itertools
 
 class Kami2Puzzle:
     def __init__(self, initial_state):
@@ -66,8 +66,9 @@ class PuzzleState:
         self.colors - set of strings, the colors in the graph state
         self.node_colors - dict from node to string, the colors of each node
         self.moves_left - int, the number of moves left to solve the puzzle
-        self.pairwise_distances - 2D dict, the pairwise distance between nodes
-        (see get_pairwise_distances function below)
+        self.max_dist_for_color - dict, mapping color to the maximum distance
+        between any two nodes of that color in the graph
+        (see get_max_dist_for_color function below)
         """
         self._validate_init(graph, node_colors, moves_left)
 
@@ -75,7 +76,7 @@ class PuzzleState:
         self.colors = set(node_colors.values())
         self.node_colors = node_colors
         self.moves_left = moves_left
-        self.pairwise_distances = None
+        self.max_dist_for_color = None
 
     def _validate_init(self, graph, node_colors, moves_left):
         """
@@ -167,9 +168,10 @@ class PuzzleState:
 
         return PuzzleState(new_graph, new_node_colors, self.moves_left - 1)
 
-    def get_pairwise_distances(self):
+    def get_max_dist_for_color(self):
         """
-        Gets the pairwise distances between nodes in the graph (memoized).
+        Returns a mapping from node color to the maximum distance between any
+        two nodes of that color in the graph (memoized).
         """
         def brandes(graph):
             """
@@ -206,6 +208,20 @@ class PuzzleState:
                         #     pred[nbr].append(node_v)
             return dist
 
-        if self.pairwise_distances is None:
-            self.pairwise_distances = brandes(self.graph)
-        return self.pairwise_distances
+        if self.max_dist_for_color is None:
+            self.max_dist_for_color = {}
+            pairwise_distances = brandes(self.graph)
+            for color in self.colors:
+                max_dist_for_color = -float('inf')
+                color_nodes = []
+                for node in self.graph:
+                    if self.get_color(node) == color:
+                        color_nodes.append(node)
+
+                for (node1, node2) in itertools.combinations(color_nodes, 2):
+                    distance = pairwise_distances[node1][node2]
+                    if distance > max_dist_for_color:
+                        max_dist_for_color = distance
+                self.max_dist_for_color[color] = max_dist_for_color
+
+        return self.max_dist_for_color

@@ -1,5 +1,4 @@
 import copy
-import itertools
 
 import statespace as kami2
 import deterministic_search as search
@@ -39,24 +38,13 @@ def color_distance_heuristic(state):
         # print("color with only one node")
         return state.num_colors() - 1
 
-    nodes = state.nodes()
     # how many moves to contract one color to a single node?
     moves_to_contract = state.moves_left
 
-    pairwise_distances = state.get_pairwise_distances()
+    max_dist_for_color = state.get_max_dist_for_color()
     for color in state.colors:
-        max_dist_for_color = -float('inf')
-        color_nodes = []
-        for node in nodes:
-            if state.get_color(node) == color:
-                color_nodes.append(node)
-
-        for (node1, node2) in itertools.combinations(color_nodes, 2):
-            distance = pairwise_distances[node1][node2]
-            if distance > max_dist_for_color:
-                max_dist_for_color = distance
-        # print("max dist for color %s = %d" % (color, max_dist_for_color))
-        optimistic_num_moves = (max_dist_for_color + 1) // 2
+        # print("max dist for color %s = %d" % (color, max_dist_for_color[color]))
+        optimistic_num_moves = (max_dist_for_color[color] + 1) // 2
         if optimistic_num_moves < moves_to_contract:
             moves_to_contract = optimistic_num_moves
     return moves_to_contract + state.num_colors() - 1
