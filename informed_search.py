@@ -54,6 +54,29 @@ def color_distance_heuristic(state):
 # is equivalent to running A* on the original problem with the given heuristic.
 def transform_a_star_to_ucs(problem, heuristic):
     class NewKami2Puzzle(kami2.Kami2Puzzle):
+
+        ## TODO how to avoid recomputing the heuristic multiple times?
+        ## maybe store the terminal state boolean in the state?
+        def is_terminal_state(self, state):
+            """
+            Returns 1 if the given state is a goal state (i.e. all nodes are the
+            same color and number of moves remaining is >= 0), returns -1 if given
+            state cannot lead to a solution (e.g. number of moves remaining < 0,
+            not enough moves to solve even in best case, etc.), and returns 0 otherwise.
+            """
+            state_heuristic_val = state.update_heuristic_value(heuristic)
+
+            if state.moves_left >= 0 and state.num_colors() == 1:
+                return 1
+            elif state.moves_left < 0 or state_heuristic_val > state.moves_left:
+                ## print if using the specific heuristic check would have pruned
+                ## this state where the generic num_colors check would not have
+                # if state_heuristic_val > state.moves_left and not (state.num_colors() > state.moves_left + 1):
+                #     print(f"heuristic = {state_heuristic_val} but only {state.moves_left} moves left!")
+                return -1
+            else:
+                return 0
+
         def actions_and_costs(self, state):
             actions_costs = problem.actions_and_costs(state)
             for i in range(len(actions_costs)):

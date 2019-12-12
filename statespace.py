@@ -76,6 +76,8 @@ class PuzzleState:
         self.colors = set(node_colors.values())
         self.node_colors = node_colors
         self.moves_left = moves_left
+
+        self.heuristic_val = None
         self.max_dist_for_color = None
 
     def _validate_init(self, graph, node_colors, moves_left):
@@ -167,6 +169,14 @@ class PuzzleState:
         new_node_colors[node] = new_color
 
         return PuzzleState(new_graph, new_node_colors, self.moves_left - 1)
+
+    def update_heuristic_value(self, heuristic_func):
+        if self.heuristic_val is None:
+            self.heuristic_val = heuristic_func(self)
+            # print(f"saving heuristic value: {self.heuristic_val} for state {hash(self)}")
+        # else:
+        #     print(f"using memoized heuristic value: {self.heuristic_val} for state {hash(self)}")
+        return self.heuristic_val
 
     def get_max_dist_for_color(self):
         """
